@@ -1,7 +1,7 @@
 # pearl-tennis
-Tennis-Spiel "Ping" für das auf ATARI-ST Computern lauffähige Echtzeit-Betriebssystem RTOS-UH, geschrieben in PEAR.
+Tennis-Spiel "Ping" für das auf ATARI-ST Computern lauffähige Echtzeit-Betriebssystem RTOS-UH, geschrieben in PEARL.
 
-HARDWARE: 
+Hardware: 
 
 - ATARI ST 1040, TELEVIDEO Terminal TV950 oder TV955
 - ATARI ST 1040, IBM PC mit Terminalprogramm "PROCOMM"
