@@ -6,4 +6,4 @@ HARDWARE:
 - ATARI ST 1040, TELEVIDEO Terminal TV950 oder TV955
 - ATARI ST 1040, IBM PC mit Terminalprogramm "PROCOMM"
 
-EINFACHES PINGPONG-SPIEL, DASS NICHT NUR AUF DEM HAUPTBILDSCHIRM, SONDERN AUCH AUF EINEM EXTERNEN TERMINAL(TELEVIDEO 950/955) ODER EINEM ENTSPRECHENDEN MICROCOMPUTER MIT TERMINAL-EMULATOR(IBM-PC MIT DEM TERMINALPROGRAMM "PROCOMM V2.4.2" LAEUFT
+Einfaches Pingpong-Tennis-Spiel, das nicht nur auf dem Hauptbildschirm, sondern auch auf einem externen Terminal ( TELEVIDEO 950/955 ) oder einem entsprechenden Mikrocomputer mit Terminal-Emulator ( IBM-PC mit dem Terminalprogramm "PROCOMM V2.4.2" ) läuft.
