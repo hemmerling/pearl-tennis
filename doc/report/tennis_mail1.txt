@@ -1,0 +1,113 @@
+Rolf Hemmerling                           Hannover, 1988-01-30
+
+An
+PEARL Verein e.V.
+Geschaeftsstelle Muenchen
+Werner Heisenberg Weg 39
+8014 Neubiberg
+
+Betreff: PEARL-WETTBEWERB
+Geraet:   ATARI ST 1040 mit RTOS-UH V2.1 oder V2.0
+         externes TERMINAL (IBM PC mit TELEVIDEO 955
+         Terminal Emulationsprogramm "PROCOMM", angeschlossen mit
+         19200 Baud,8Bit Wortlaenge,2Stoppbits)
+
+Sehr geehrte Damen und Herren !
+Hier ist mein sehr bescheidener Beitrag zum PEARL-Wettbewerb. Er ist 
+leider Ausdruck meines Scheiterns. Ich hatte naemlich eigentlich vor, 
+ein einfaches Telespiel zu schreiben, das auf fast jedem 
+PEARL-RECHNER laeuft, der ueber ein (bestimmtes) externes Terminal 
+verfuegt und nicht unbedingt ueber einen speicherorientierten 
+Bildschirmspeicher. Insbesondere sollte dasselbe Programm einmal vom 
+Hauptbildschirm aufrufbar sein und danach vom externen Terminal,
+und es sollte in beiden Faellen gleichartig funktionieren.
+Grafik-Spiele sind auf Microcomputern mit speicherorientierten
+Bildschirmspeichern populaer geworden, die heutigen 
+Spielhoellen-Geraete sind ebensolche.
+
+Bei Spielen, die ueber externe Terminals mit vergleichsweise geringen 
+Baudraten gespielt werden, gibt es folgende Probleme, die auch beim 
+Einsatz von PEARL nicht so ohne weiteres geloest sind: Wird mit einer 
+Tastatur gespielt, so drueckt ein Spieler ueblicherweise auf 
+verschiedene Tasten, um z.B. ein Paddle oder eine Figur auf dem 
+Bildschirm nach rechts oder links zu bewegen. Dies fuehrt zu einer 
+recht hohen Datenuebertragungsrate zum Rechner hin, da im Extremfall 
+IMMER eine Taste gedrueckt ist (z.B. der Feuerknopf oder beim 
+Pingpongspiel ein staendiger Wechsel zwischen den Tasten fuer links 
+und rechts. Bei einer gleichzeitigen Ausgabe von Grafiken fuehrt dies 
+sehr leicht zu "Stauungen" auf der Eingabeseite, so dass z.B. der 
+Cursor sich zunaechst gar nicht und dann ziemlich ruckweise bewegt. 
+
+Dies wird noch umso schlimmer, wenn das einzige verfuegbare 
+Terminalprogramm, das das gleiche Terminal wie der ATARI 
+Hauptbildschirm (TELEVIDEO 955) emuliert, noch dazu so unguenstig
+programmiert ist, dass dieser Effekt jedes Telespiel verdirbt.
+
+Als ersten Ausweg bietet sich an, zumindest fuer die Eingabe die Maus 
+bzw. die Joysticks des Hauptgeraets zu verwenden und nur zur Ausgabe 
+ein externes Terminal zu verwenden. Dies ist hier geschehen. 
+
+Aber nicht ueberall stehen solche Eingabegeraete an externen Terminals 
+zur Verfuegung. Denn wenn man Zeichen von der Tastatur gibt, muessen 
+ALLE ZEICHEN "verarbeitet" und ausgewertet werden, die ankommen. Aber 
+erst zu einem Zeitpunkt, wo schon recht lange eine Taste z.B fuer 
+"rechts" gedrueckt wurde, sieht der Spieler eine Reaktion auf dem 
+Bildschirm und drueckt daraufhin eine andere Taste, z.B. fuer "links". 
+Es stehen aber u.U. noch viele Tastendruecke im externen Terminal und 
+in den Eingabepuffern des Betriebssystems an, die erst noch verarbeitet 
+werden muessen, und die bewirken, dass sich z.B. das Paddle noch 
+lange in die falsche Richtung bewegt. Jeder (oder meinetwegen jeder 
+dritte) dieser Tastendruecke muss nun noch als Reaktion zu einer 
+geaenderten Bildschirmdarstellung fuehren, also muss durch das 
+Nadeloehr "serielle Schnittstelle" dieser Wust an Zeichen 
+zurueckuebertragen werden, womit also die Schnittstelle vollens 
+ueberlastet wurde. 
+
+Fuer kommerzielle Programme in der Programmiersprache "C" unter UNIX 
+hilft eine CURSES-Unterprogrammbibliothek, die Anzahl zu uebertragene 
+Zeichen zu minimieren, um einen halbwegs schnelle Bildschirmaufbau zu 
+erreichen. Dies steht unter RTOS-UH PEARL nicht zur Verfuegung und 
+eignet sich auch nicht fuer Spielprogramme.
+
+Es nuetzt auch nichts, die Schnittstelle so einzustellen, dass Zeichen
+verloren gehen koennen ("C" Modus), da ja unter Umstaenden die 
+"wichtigen" Zeichen damit verloren gehen (Sonderfunktionen ect zum 
+Anzeigen des Spielstandes) und nicht nur kontrolliert die 
+"ueberfluessigen" links- und rechts- Tastendruecke.
+Deshalb ist bei Betrieb auf dem externen Terminal es viel leichter 
+moeglich, sich das Tennis-Paddle zu "zerreissen", als dies auf dem 
+ATARI Hauptbildschirm der Fall ist.
+
+Ferner fehlen in Verbindung mit externen Terminals auch einige fuer
+den Hauptbildschirm verfuegbare Funktionen: z.B. ist die Cursorposition
+auf dem Hauptbildschirm mit der Funktion CURPOS verfuegbar, auf dem
+Terminalemulator "Procomm" ist sie nicht implementiert.
+
+Ausserdem gibt es zur Zeit zwar die Moeglichkeit, ein Programm von
+einem beliebigen Terminal aus aufzurufen (die Funktion ASSIGN bewirkt
+eine Ausgabe auf dem Terminal, von dem aus das Programm aus aufgerufen
+wurde), aber keinerlei Moeglichkeit festzustellen, ob das Programm
+nun auf dem Hauptbildschirm laeuft oder auf einem externen Terminal,
+um ein unterschiedliches Handling z.B. von CURPOS oder von Bildschirm-
+attributen zu bewirken.
+
+Diese Pleite hat sehr viel von der Zeit gekostet, die ich mir 
+eigentlich fuer diese PEARL-Programmaktion reserviert hatte. Das 
+Ergebnis ist unbestritten mickrig. Ich hoffe auch nur auf den 
+Trostpreis, die Listings der preisgekroenten Programme. 
+Nichtsdestotrotz war dies eine bittere Lehre fuer mich, die sich 
+gewaschen hat. Nichts besser als dieser Versuch zeigt den Unterschied 
+zwischen bildschirmorientierter Microcomputer-Software und 
+terminalorientierter Minicomputer- oder Multiuser- Software, bei
+der der Programmierer (wie ich jetzt) ganz schoen arm dran ist, sobald
+schnelle Benutzer-Interaktion und schnelle Bildschirmanzeige gefragt 
+ist.
+
+Falls Sie Zeit und Lust haben, koennen Sie ja mein Programm ja mal ueber
+das externe Terminal(IBM PC) mit einem ATARI-RTOS probieren. Das dazu
+noetige PUBLIC DOMAIN Terminalprogramm habe ich beigelegt. ALT-F10 
+bewirkt die Darstellung eines Helpscreens, mit deren Hilfe man das 
+Programm konfigurieren kann
+
+Mit freundlichen Gruessen
+

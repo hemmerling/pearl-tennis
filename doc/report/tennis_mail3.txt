@@ -1,0 +1,54 @@
+Rolf Hemmerling                    Hannover, 1988-12-08
+
+
+
+An
+Pearl-Verein e.V
+Werner-Heisenberg-Weg 39
+8014 Neubiberg
+
+
+Sehr geehrte Damen und Herren !
+
+Ich habe gemaess Ihrem Schreiben vom 17.11.88 den 19. Platz im
+Pearlwettbewerb erreicht. Schoenen Dank fuer die Uebersendung der
+Listings der preisgekroenten Programme. Aber mal ehrlich, da
+nun alle zugeschickten Listings und wohl auch fast alle anderen
+eingeschickten Programme fuer RTOS/UH Pearl und im wesentlichen
+wohl fuer den RTOS/UH auf dem ATARI ST geschrieben worden sind,
+waere es doch nett, diese Programme allen Teilnehmern auf Anfrage auf
+Disketten zuzuschicken. Da wohl fast alle Teilnehmer Programme fuer
+RTOS/UH Pearl auf dem geschrieben haben, ist das ATARI 3 1/2 Zoll
+Diskettenformat einseitig/doppelseitig wohl fuer so gut wie
+jeden Teilnehmer lesbar.
+
+Ich wuerde Sie hiermit bitten, mir alle preisgekroenten Programme
+(vielleicht bis hinunter auf meinen 19.Platz oder auch noch weiter,
+falls der Diskettenplatz ausreicht) auf den beiliegenden
+*doppelseitigen* ATARI Disketten zuzuschicken. Falls der ein oder
+andere Beitrag auf einem nicht-ATARI kompatiblen Format vorliegen
+sollte und bei Ihnen nicht konvertiert werden kann, macht sein Fehlen
+nichts. Um Ihnen weitere Kosten zu ersparen, ist ein rueckadressierter
+frankierter Rueckumschlag beigefuegt. Es waere am besten, pro Beitrag
+(Programm + Dokumentationsdateien) ein Unterverzeichnis auf den
+Disketten anzulegen. Falls die Dokumentation teilweise fehlt, weil
+sie nur schriftlich vorhanden ist, macht das nichts. Sollten Sie
+das eine oder andere Programm noch anders verwerten wollen, so
+lassen sie diese einfach weg.
+
+Es waere sehr schoen, wenn Sie sich dazu entschliessen koennten, diese
+Programme an den RTOS-UH Softwarepool des Heise Verlages (C't)
+weiterzugeben, so dass sie dann allen interessierten PEARL Nutzern
+zur Verfuegung stehen. An den an Sie uebertragenen Rechten an den
+Programmen wuerde das ja nichts aendern, da z.B. in Public Domain
+Softwarebibliotheken aus den USA fuer den IBM PC auch Copyright-
+geschuetzte Programme gesammelt werden. Eine beigefuegte
+Informationsdatei (mit Hinweis auf das Copyright) ueber den
+PEARL-Verein wuerde auch ein bisschen Werbung fuer Sie bedeuten.
+
+Ich erinnere noch einmal an mein letztes Schreiben mit Bitte um
+Mitteilung, ob meinen geaeusserten Gewinnwuenschen entsprochen werden
+konnte.
+
+Mit freundlichen Gruessen
+

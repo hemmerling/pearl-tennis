@@ -1,0 +1,41 @@
+ ROLF HEMMERLING                                                
+                                                                 
+ HARDWARE: ATARI ST 1040                                        
+           TELEVIDEO TERMINAL TV950 ODER TV955                  
+           ODER:                                                
+           ATARI ST 1040                                        
+           IBM PC MIT TERMINALPROGRAMM "PROCOMM"                
+                                                                
+ SOFTWARE: RTOS-UH V2.0 ODER 2.1                                
+                                                                
+ EINFACHES PINGPONG-SPIEL, DASS NICHT NUR AUF DEM               
+ HAUPTBILDSCHIRM, SONDERN AUCH AUF EINEM EXTERNEN               
+ TERMINAL(TELEVIDEO 950/955) ODER EINEM ENTSPRECHENDEN          
+ MICROCOMPUTER MIT TERMINAL-EMULATOR(IBM-PC MIT                 
+ DEM PUBLIC-DOMAIN TERMINALPROGRAMM "PROCOMM V2.4.2"            
+ LAEUFT                                                         
+                                                                
+ ZUM EINSTELLEN DER SCHNITTSTELLE FUER DAS EXTERNE              
+ TERMINALPROGRAMM:                                              
+ -----------------                                              
+ SD A2: 33 00                                                   
+                                                                
+ ZU KOMPILIEREN:                                                
+ ---------------                                                
+ COPY F0:sPING>ED:SI                                            
+ P LO NO -- LOAD ED:SR                                          
+ COPY ED:SR>F0:cPING                                            
+                                                                
+ ZUM LADEN:                                                     
+ --------------                                                 
+ LOAD F0:cPING                                                  
+                                                                
+ ZUM AUSFUEHREN:                                                
+ ---------------                                                
+ SPINGPONG                                                      
+                                                                
+ ZUM ABBRECHEN:                                                 
+ --------------                                                 
+ CTRL-A, UND DANN:                                              
+ TPINGPONG                                                      
+

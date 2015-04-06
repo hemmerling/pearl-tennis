@@ -1,0 +1,483 @@
+/*+T*/ 
+/*+M*/ 
+/* 
+ *  PING - EINFACHES PINGPONG-SPIEL, DAS NICHT NUR AUF DEM 
+ *  HAUPTBILDSCHIRM, SONDERN AUCH AUF EINEM EXTERNEN 
+ *  TERMINAL(TELEVIDEO 950/955) ODER EINEM ENTSPRECHENDEN 
+ *  MICROCOMPUTER MIT TERMINAL-EMULATOR(IBM-PC MIT 
+ *  DEM TERMINALPROGRAMM "PROCOMM V2.4.2") LAEUFT                                  
+ *
+ *  Copyright 1988-2015 Rolf Hemmerling
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing,
+ *  software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ *  either express or implied.
+ *  See the License for the specific language governing permissions
+ *  and limitations under the License.
+ *
+ *  Letztes Update: 1988-01-30 
+ *
+ *
+ * HARDWARE: ATARI ST 1040
+ *           TELEVIDEO TERMINAL TV950 ODER TV955
+ *           ODER:
+ *           ATARI ST 1040
+ *           IBM PC MIT TERMINALPROGRAMM "PROCOMM"
+ *
+ * SOFTWARE: RTOS-UH V2.0 ODER 2.1
+ *
+ * ZUM EINSTELLEN DER SCHNITTSTELLE FUER DAS EXTERNE
+ * TERMINALPROGRAMM:
+ * -----------------
+ * SD A2: 33 00
+ *
+ * ZU KOMPILIEREN:
+ * ---------------
+ * COPY F0:sPING>ED:SI
+ * P LO NO -- LOAD ED:SR
+ * COPY ED:SR>F0:cPING
+ *
+ * ZUM LADEN:
+ * --------------
+ * LOAD F0:cPING
+ *
+ * ZUM AUSFUEHREN:
+ * ---------------
+ * STRT_PING
+ *
+ * ZUM ABBRECHEN:
+ * --------------
+ * CTRL-A, UND DANN:
+ * TERM_PING
+ *
+ */
+
+/*-L*/
+/*+M*/
+/*+T*/
+
+MODULE PING;
+SYSTEM; 
+ GD_terminal:D1;       /* ALLGEMEINES EIN/AUSGABEGERAET */ 
+ TERMKEY:A1(TFU=1); /* ES WIRD NUR AUF DIE EINGABE EINES ZEICHEN 
+                       GEWARTET */ 
+ TERMRESP:A1(TFU=1,AI=$0200); /* TERMINAL ANTWORTET AUF CURSOR POS 
+                                 ABFRAGE */ 
+ GD_shell:XC; 
+
+ /* SPEICHERADRESSE, AN DER STATUSMELDUNGEN DES TASTATURPROZESSORS DES 
+    ATARI ST ABGELEGT WERDEN */ 
+ MAUSRELX: BU(000008E7,01) <-; 
+
+ KBDIRQ:   EV(80000000); /* TASTATUR-PROZESSOR IRQ */ 
+
+
+PROBLEM; 
+   SPC GD_terminal         DATION OUT ALPHIC CONTROL(ALL); 
+   SPC GD_shell            DATION OUT ALPHIC CONTROL(ALL); 
+   SPC TERMKEY             DATION INOUT ALPHIC CONTROL(ALL); 
+   SPC TERMRESP            DATION INOUT ALPHIC CONTROL(ALL); 
+
+   SPC ASSIGN              ENTRY (DATION INOUT ALPHIC CONTROL(ALL) 
+                                  IDENT,CHAR(24)) GLOBAL; 
+   SPC CURPOS              ENTRY (CHAR(1) IDENT,CHAR(1) IDENT) GLOBAL; 
+
+   SPC MAUSRELX            DATION IN BASIC; 
+   SPC KBDIRQ              INTERRUPT; 
+
+   DCL (CR,LF,BELL,EOF,ESC,BACKSP,SFTRET)    CHAR(1); 
+   DCL (NUL,CURSUP,CURSDN,CURSRI,CURSLF,TAB) CHAR(1); 
+   DCL (CPOS,CLREOL,CLREOS,CLRSCR) CHAR(2); 
+   DCL (INVERS,UNDERL,NORMV)       CHAR(3); 
+
+   DCL (READCUR,XYPOS)             CHAR(2); 
+   DCL (READCURP)                  CHAR(3); 
+   DCL SHOWANS                     CHAR(2); 
+   DCL XYOFFSET                    FIXED; 
+
+
+   /* OBERGRENZE BILDSCHIRM, NUR 24ZEILEN NUTZEN, 
+      DA EXTERNE TERMINALS OFT KEINE 25 ZEILEN HABEN */ 
+   DCL (XMAX,YMAX) INV FIXED INIT (80,24); 
+   /* AKTUELLE BALL- UND PADDLE KOORDINATEN */ 
+   DCL (XB,YB,XP,YP) FIXED; 
+   /* ALTE BALL- UND PADDLE KOORDINATEN */ 
+   DCL (XBOLD,YBOLD,XPOLD,YPOLD) FIXED; 
+   /* RELATIVE BEWEGUNG PRO BALLUPD-CLICK */ 
+   DCL (YREL,XREL) FIXED INIT (1,1); 
+
+   /* BALL- UND PADDLEDATEN 
+      UNGERADE PADDLE-LAENGE !!  */ 
+   DCL SPACEBALL INV CHAR(1) INIT(' '); 
+   DCL BALL INV CHAR(1) INIT('O'); 
+   DCL PADSYM INV CHAR(1) INIT('='); 
+   DCL SPACEPADDLE INV CHAR(5) INIT('     '); 
+   DCL PADDLE INV CHAR(5) INIT('====='); 
+   DCL PLENGTH INV FIXED INIT (5); 
+
+   /*  ZUM UPDATEN DER PADDLE- UND BALLPOSITON, 
+       SOWIE BILDSCHIRM POSITIONIERUNG */ 
+   DCL (PADDLEUPD,BALLUPD,GUPD) SEMA GLOBAL PRESET(1,1,1); 
+
+   /* ANZAHL DER BAELLE IM SPIEL */ 
+   DCL BALLS FIXED INIT(5); 
+   /* ZAEHLER TREFFER AUF STIRNWAND */ 
+   DCL HITS  FIXED INIT(0); 
+
+   /* FORWAERTS-DEKLARIERUNG */ 
+   SPC TERM_PING TASK; 
+   SPC BALLMOV TASK; 
+   SPC TERMUPD TASK; 
+   SPC PADMOV TASK; 
+
+SEQUIN: PROC; 
+  /* TELEVIDEO 955 UND HAUPTBILDSCHIRM */ 
+  CPOS:=     TOCHAR(27)><'=';  /* Cursorpositionierung 
+                                  (row,column)+$20             */ 
+  CLREOL:=   TOCHAR(27)><'T';  /* Clear end of line            */ 
+  CLREOS:=   TOCHAR(27)><'Y';  /* Clear end of screen          */ 
+  INVERS:=   TOCHAR(27)><'G4'; /* invertierte Schrift          */ 
+  UNDERL:=   TOCHAR(27)><'G8'; /* unterstrichen                */ 
+  NORMV:=    TOCHAR(27)><'G0'; /* normale Darstellung          */ 
+  CLRSCR:=   TOCHAR(27)><'*';  /* Schirm und Heim s{ubern      */ 
+  CR:=       TOCHAR(13);       /* Carriage Return (Absatzende) */ 
+  SFTRET:=   TOCHAR(141);      /* "soft return"   (Zeilenende) */ 
+  CURSDN:=   TOCHAR(10);       /* Cursor abw{rts               */ 
+  CURSUP:=   TOCHAR(11);       /* Cursor aufw{rts              */ 
+  CURSLF:=   TOCHAR(8);        /* Cursor links                 */ 
+  CURSRI:=   TOCHAR(12);       /* Cursor rechts                */ 
+  LF:=       TOCHAR(10);       /* Line Feed                    */ 
+  ESC:=      TOCHAR(27);       /* Escape                       */ 
+  BELL:=     TOCHAR(7);        /* Akust. Zeichen               */ 
+  BACKSP:=   TOCHAR(8);        /* Backspace                    */ 
+  NUL:=      TOCHAR(0);        /* Null                         */ 
+  EOF:=      TOCHAR(4);        /* Ende-Kennung                 */ 
+
+  READCUR:=  TOCHAR(27)><'?';  /* READ CURSOR 
+                                  AUSGABE: (row,column)+$20    */ 
+  READCURP:= TOCHAR(27)><'/';  /* READ CURSOR                  */
+                               /* AUSGABE: (page,row,column+$20*/ 
+  SHOWANS:=  '';               /* ESCAPE-HEADER, NACH DEM DIE 
+                                  INFORMATION UEBER DIE 
+                                  SCHNITTSTELLE 
+                                  ZURUCKGESCHICKT WIRD         */ 
+  XYPOS:=    'YX';             /* ANGABE, OB YX (TELEVIDEO) 
+                                  ODER XY(VT52,..)             */ 
+  XYOFFSET:= 31;               /* OFFSET, DER ZU XY KOORDINATEN 
+                                  DAZUZUZAEHLEN IST 
+                                  0..79,0..23 ->1..80,1..24    */ 
+END; /* PROC */ 
+
+/* BILDSCHIRMROUTINEN */ 
+
+TCLRSCR: PROC; 
+ BEGIN 
+  PUT CLRSCR TO GD_terminal; 
+ END; 
+END; /* PROC CLRSCR */ 
+
+/* CURSORPOSITIONIERUNG, WIE BEI TURBO PASCAL 
+   VON 1..80,1..24 UND NICHT WIE DAS HARDWARE-TERMINAL UND 
+   DER HAUPTBILDSCHIRM 0..79,0..23 */ 
+GOTOXY: PROC((X,Y) FIXED); 
+ BEGIN; 
+  IF X<1 THEN X:=1; FIN; 
+  IF Y<1 THEN Y:=1; FIN; 
+  IF XYPOS EQ 'YX' 
+   THEN /* FUER TELEVIDEO UND HAUPTBILDSCHIRM */ 
+    REQUEST GUPD; 
+    PUT CPOS,TOCHAR((Y REM YMAX) +XYOFFSET), 
+             TOCHAR((X REM XMAX) +XYOFFSET) TO GD_terminal; 
+    RELEASE GUPD; 
+   ELSE 
+    REQUEST GUPD; 
+    PUT CPOS,TOCHAR((X REM XMAX) +XYOFFSET), 
+             TOCHAR((Y REM YMAX) +XYOFFSET) TO GD_terminal; 
+    RELEASE GUPD; 
+   FIN; 
+ END; 
+END; /* PROC GOTOXY */ 
+
+/* CURSOR AN- UND ABSCHALTEN, IM AUGENBLICK AUF EXTERNEM 
+   TERMINAL NICHT MOEGLICH 
+   WEDER TELEVIDEO 950/955 SCHEINEN DIES ZU UNTERST]TZEN, UND 
+   TERMINAL EMULATOR "PROCOMM" UNTERSTUETZT DIES AUCH NICHT */ 
+CURSORON: PROC; 
+ BEGIN; 
+  PUT 'CON' TO GD_shell;
+ END; 
+END; /* PROC CURON */ 
+
+CURSOROFF: PROC; 
+ BEGIN; 
+  PUT 'COFF' TO GD_shell;
+ END; 
+END; /* PROC CUROFF */ 
+
+/* LESEN DER AKTUELLEN CURSORPOSITION FUER EXTERNE 
+   TERMINALS TV 955/950, IM TERMINALEMULATOR "PROCOMM" 
+   LEIDER NICHT IMPLEMENTIERT, DAHER HIER NICHT VERWENDET */ 
+CURPOSX: PROC ((X,Y) CHAR(1) IDENT); 
+ BEGIN; 
+  PUT READCUR TO GD_terminal; 
+  GET X,Y FROM TERMRESP BY SKIP,A(1); 
+ END; 
+END; /* PROC CURPOSX */ 
+
+/* ENDE DER BILDSCHIRMROUTINEN */ 
+
+/* BALL AUF BILDSCHIRM MALEN */ 
+PAINTBALL: PROC; 
+ BEGIN; 
+  CALL GOTOXY(XBOLD,YBOLD); 
+  PUT SPACEBALL TO GD_terminal; 
+  CALL GOTOXY(XB,YB); 
+  PUT BALL TO GD_terminal; 
+  XBOLD:= XB; YBOLD:= YB; 
+ END; 
+END; /* PROC PAINTBALL */ 
+
+/* PADDLE AUF BILDSCHIRM MALEN */ 
+PAINTPADDLE: PROC; 
+ BEGIN 
+  CALL GOTOXY(XPOLD-(PLENGTH // 2),YPOLD); 
+  PUT SPACEPADDLE TO GD_terminal; 
+  CALL GOTOXY(XP-(PLENGTH // 2),YP); 
+  PUT PADDLE TO GD_terminal; 
+  XPOLD:= XP; YPOLD:= YP; 
+ END; 
+END; /* PROC PAINTPADDLE */ 
+
+/*  INITIALISIERUNG ALLER DATEN VOR MELDUNG */ 
+INITV: PROC; 
+ BEGIN 
+  /* ANFANGSPOSITON FESTLEGEN */ 
+  XB := XMAX//2; YB := 2; 
+  XBOLD := XB; YBOLD := YB; 
+  XP := XMAX//2; YP := 1; 
+  XPOLD := XP; YPOLD := YP; 
+  /* TERMINAL-SEQUENZEN */ 
+  CALL SEQUIN; 
+  /* ANZAHL DER BAELLE PRO SPIEL */ 
+  BALLS:= 5; 
+  /* ANZAHL TREFFER AUF RUECKWAND NULLEN */ 
+  HITS:= 0; 
+  /* RELATIVBEWEGUNG INITIALISIEREN */ 
+  XREL:= 1; 
+  YREL:= 1; 
+ END; 
+END; /* PROC INITV */ 
+
+/*  INITIALISIERUNG ALLER DATEN NACH MELDUNG */ 
+INITN: PROC; 
+ BEGIN; 
+  REQUEST BALLUPD; 
+  REQUEST PADDLEUPD; 
+  CALL PAINTPADDLE; 
+  CALL PAINTBALL; 
+  RELEASE PADDLEUPD; 
+  RELEASE BALLUPD; 
+ END; 
+END; /* PROC */ 
+
+/* SOUND AUSGEBEN (1 X BELL) */ 
+PING: PROC; 
+ BEGIN; 
+  PUT TOCHAR(7) TO GD_terminal; 
+ END; 
+END; /* PROC PING */ 
+
+/* PROZEDUR, UM BALLBEWEGUNG ZU AKTIVIEREN */ 
+BALLACTIV: PROC; 
+ BEGIN 
+  AFTER 0.2 SEC ALL 0.05 SEC ACTIVATE BALLMOV; 
+ END; 
+END;  /* PROC BALLACTIV */ 
+
+/* PROZEDUR, UM BILDSCHIRMAUFFRISCHUNG ZU AKTIVIEREN */ 
+TERMACTIV: PROC; 
+ BEGIN; 
+  AFTER 0.2 SEC ALL 0.10 SEC ACTIVATE TERMUPD; 
+ END; 
+END; /* PROC TERMACTIV */ 
+
+/* STATUS AUSWERTEN - SIND ALLE BAELLE VERBRAUCHT */ 
+STATUSUPD: TASK PRIO 35; 
+ BEGIN; 
+  IF BALLS EQ 0 
+   THEN 
+    CALL GOTOXY(10,10); 
+    PUT 'END OF GAME' TO GD_terminal; 
+    ACTIVATE TERM_PING; 
+   ELSE 
+    AFTER 3.0 SEC RESUME; 
+    CALL BALLACTIV; 
+   FIN; 
+ END; 
+END; /* TASK STATUSUPD */ 
+
+/* SOUND AUSGEBEN (2 X BELL) */ 
+PINGPING: PROC; 
+ BEGIN; 
+  PUT TOCHAR(7),TOCHAR(7),TOCHAR(7),TOCHAR(7),TOCHAR(7) 
+      TO GD_terminal; 
+ END; 
+END; /* PROC PINGPING */ 
+
+
+/* START GAME TASKS */ 
+STARTGAME: PROC; 
+ BEGIN 
+  CALL BALLACTIV; 
+  WHEN KBDIRQ ACTIVATE PADMOV; 
+  ENABLE KBDIRQ; 
+  CALL TERMACTIV; 
+ END; 
+END; /* PROC STARTGAME */ 
+
+
+/* BALLMOV - NEUE BALLPOSITION BERECHNEN */ 
+BALLMOV: TASK PRIO 31; 
+  DCL (X,Y) FIXED; 
+  DCL TREFF BIT(1) INIT('0'B1); 
+ BEGIN; 
+  DISABLE KBDIRQ; 
+  REQUEST PADDLEUPD; 
+  REQUEST BALLUPD; 
+  XB := XB+XREL; 
+  YB := YB+YREL; 
+  IF (YB EQ 1) 
+    THEN 
+     IF ABS(XP-XB) LE (PLENGTH//2+1) 
+      THEN 
+       XREL:= XREL; 
+       YREL:= -YREL; 
+      ELSE 
+       PREVENT BALLMOV; 
+       BALLS:= BALLS-1; 
+       XB := XMAX//2; YB := 2; 
+       XREL:= ABS(XREL); 
+       YREL:= ABS(XREL); 
+       CALL PINGPING; 
+       ACTIVATE STATUSUPD; 
+      FIN; 
+    FIN; 
+
+  /* REFLEXION AN RECHTER SEITE */ 
+   IF XB GT XMAX-1 
+    THEN 
+     XREL:=-XREL; 
+     CALL PING; 
+    FIN; 
+  /* REFLEXION AN LINKER SEITE */ 
+   IF XB LT 2 
+    THEN 
+     XREL:=-XREL; 
+     CALL PING; 
+    FIN; 
+  /* REFLEXION AN STIRNWAND */ 
+   IF YB GT YMAX-1 
+    THEN 
+     YREL:=-YREL; 
+     XREL:= XREL; 
+     HITS:= HITS+1; 
+     CALL PINGPING; 
+    FIN; 
+  RELEASE BALLUPD; 
+  RELEASE PADDLEUPD; 
+  ENABLE KBDIRQ; 
+ END; 
+END; /* TASK BALLMOV */ 
+
+/* BEWEGUNG DES PADDLES MIT DER MAUS NOTIEREN */ 
+PADMOV: TASK PRIO 27; 
+  DCL DX FIXED; /* INCREMENT OF POINTING DEVICE */ 
+ BEGIN 
+  DISABLE KBDIRQ; 
+  TAKE DX FROM MAUSRELX; 
+  REQUEST PADDLEUPD; 
+  XP := XP + DX//128; /* NUR HIGH BIT ZAEHLT FUER BEWEGUNG */ 
+  IF XP LT (1+(PLENGTH//2)) THEN XP:= 1+(PLENGTH//2); FIN; 
+  IF XP GT (XMAX-(PLENGTH//2)) THEN XP:= XMAX-(PLENGTH//2); FIN; 
+  RELEASE PADDLEUPD; 
+  ENABLE KBDIRQ; 
+ END; 
+END; /* TASK PADMOV */ 
+
+/* UPDATEN DES BILDSCHIRMS */ 
+/* FALLS GERADE PADDLE UND BALL ZUSAMMENTREFFEN, BITTE 
+   DAS PADDLE ZEICHNEN, DA BALL JA SOFORT WIEDER ABPRALLT */ 
+TERMUPD: TASK PRIO 28; 
+ BEGIN; 
+  REQUEST BALLUPD; 
+  REQUEST PADDLEUPD; 
+  IF (XB NE XBOLD) OR (YB NE YBOLD) 
+   THEN 
+    CALL PAINTBALL; 
+   FIN; 
+  IF (XP NE XPOLD) OR 
+     ( (YB EQ YP) AND ( ABS(XB-XP) LE ((PLENGTH//2)+1) )) 
+   THEN 
+    CALL PAINTPADDLE; 
+   FIN; 
+  RELEASE PADDLEUPD; 
+  RELEASE BALLUPD; 
+ END; 
+END; /* TASK TERMUPD */ 
+
+
+/* TITEL ANZEIGEN */ 
+TITEL: PROC; 
+  DCL A CHAR; 
+ BEGIN; 
+  CALL TCLRSCR; 
+  CALL GOTOXY(15,10); 
+  PUT  'PINGPONG GAME FOR MOUSE - PRESS <CR> TO CONTINUE ' 
+        TO GD_terminal BY A,SKIP; 
+  GET  A FROM TERMKEY BY SKIP,A(1); 
+  CALL CURSORON; 
+  CALL TCLRSCR; 
+ END; 
+END; /* PROC TITEL */ 
+                                     
+/* STRT_PING == START PINGPONG */
+/* SPIEL STARTROUTINE "PINGPONG" */ 
+STRT_PING: TASK; 
+  DCL (A,B) CHAR(1); 
+ BEGIN; 
+  CALL ASSIGN (GD_terminal,'TY'); 
+  CALL ASSIGN (TERMKEY,'TY'); 
+  CALL ASSIGN (TERMRESP,'TY'); 
+  CALL INITV; 
+  CALL TITEL; 
+  CALL INITN; 
+  CALL STARTGAME; 
+ END; 
+END; /* TASK STRT_PING */ 
+
+/* TERM_PING == TERMINATE PINGPONG */
+/* FINISH THE GAME, PREVENT AND FINISH ALL STARTED TASKS */ 
+/* AUFZURUFEN ZUM PROGRAMMABBRUCH */ 
+TERM_PING: TASK PRIO 29; 
+ BEGIN; 
+  DISABLE KBDIRQ; 
+  PREVENT BALLMOV; 
+  PREVENT PADMOV; 
+  PREVENT TERMUPD; 
+  TERMINATE BALLMOV; 
+  TERMINATE PADMOV; 
+  TERMINATE TERMUPD; 
+  RELEASE PADDLEUPD; 
+  RELEASE BALLUPD; 
+ END; 
+END; /* TASK TERM_PING */ 
+
+MODEND; 
+
