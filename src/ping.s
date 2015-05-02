@@ -22,7 +22,7 @@
  *  See the License for the specific language governing permissions
  *  and limitations under the License.
  *
- *  Letztes Update: 1988-01-30 
+ *  Haupt-Entwicklungszeit: 1987 - 1988-01-30 
  *
  *
  * HARDWARE: ATARI ST 1040
